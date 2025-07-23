@@ -14,21 +14,71 @@ Assign a **credit score (0–1000)** to each wallet, based solely on historical 
 
 Higher scores indicate responsible usage (e.g., repaying loans), while lower scores flag risky or exploitative behavior.
 
----
+Feature Engineering
+
+From the raw wallet transaction data, the following features were extracted:
+- `total_deposit`: Total USD amount deposited
+- `total_borrow`: Total USD borrowed
+- `total_repay`: Total USD repaid
+- `total_redeem`: Amount withdrawn (redeemed)
+- `liquidations`: Number of times liquidated
 
 ## Architecture Overview
+        +--------------------------+
+        |  Aave Raw CSV Data File |
+        +--------------------------+
+                     |
+                     v
+        +--------------------------+
+        |    Feature Engineering   |
+        |  (deposit, borrow, etc.) |
+        +--------------------------+
+                     |
+                     v
+        +--------------------------+
+        |     Credit Score Logic   |
+        +--------------------------+
+                     |
+                     v
+        +--------------------------+
+        |  Output: wallet_scores.csv |
+        +--------------------------+
+                     |
+                     v
+        +--------------------------+
+        |  Analysis + Visualization |
+        +--------------------------+
 
-```
-user-wallet-transactions.json
-           |
-           v
-  [ score_wallets.py ]
-           |
-           v
-engineer features  ---> score wallets  ---> output/wallet_scores.csv
-```
+ Processing Flow
+Input: Load raw transaction data (wallet_data.csv)
 
----
+Feature Engineering:
+
+Group data by wallet
+
+Calculate deposit, borrow, repay, redeem, and liquidation stats
+
+Score Computation:
+
+Apply scoring formula
+
+Normalize and bound scores between 0 and 1000
+
+Analysis:
+
+Bucket scores in ranges (e.g., 0–100, 100–200, etc.)
+
+Count wallets per range
+
+Visualize score distribution using bar chart
+
+Output:
+
+Save results to output/wallet_scores.csv
+
+Generate visual summary chart
+
+
 
 ## Features Used for Scoring
 
@@ -48,24 +98,9 @@ Each wallet is summarized into the following features:
 ---
 
 ## Scoring Logic
-
-The final score is derived by scaling features between 0–1, then applying the following weight formula:
-
-```
-score = (
-  0.2 * total_deposit +
-  0.2 * total_borrow +
-  0.2 * repay_ratio +
-  0.1 * redeem_ratio +
-  0.1 * tx_count +
-  0.1 * active_days +
-  0.1 * (-liquidations)
-) * 1000
-```
-
-Scores are clipped to the range 0–1000 and rounded to the nearest integer.
-
----
+A simple, interpretable scoring function was used:
+```python
+credit_score = base_score + repayment_score - liquidation_penalty
 
 ## How to Run
 
